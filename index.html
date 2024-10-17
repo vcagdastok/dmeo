@@ -83,6 +83,7 @@
             const newMessage = messageInput.value.trim();
 
             if (newMessage === "") {
+                console.log("Message input is empty. Not sending request.");
                 return;
             }
 
@@ -92,9 +93,15 @@
             // Update chat box with user message
             updateChatBox("user", newMessage);
 
+            // Prepare the cleaned chat history without "Related Links"
+            const cleanedChatHistory = cleanChatHistory(chatHistory);
+
+            // Debug: Log the cleaned chat history being sent
+            console.log("Sending chat history to backend:", cleanedChatHistory);
+
             // Prepare the request payload
             const payload = {
-                message: chatHistory,
+                message: cleanedChatHistory,
                 context: "NavVis MLX"
             };
 
@@ -104,17 +111,37 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
-            .then(response => response.json())
+            .then(response => {
+                // Debug: Log the response status
+                console.log("Response status:", response.status);
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                // Debug: Log the response received from the backend
+                console.log("Response data:", data);
+
                 // Append the assistant's response to the chat history
                 chatHistory += `Assistant: ${data.response}\n`;
+
                 // Update chat box with assistant message
                 updateChatBox("assistant", data.response);
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                // Log any errors to the console
+                console.error('Error during request:', error);
+            });
 
             // Clear the input field
             messageInput.value = "";
+        }
+
+        // Function to clean the chat history by removing "Related Links"
+        function cleanChatHistory(history) {
+            const regex = /Related Links:.*(\n|$)/g;
+            return history.replace(regex, '');  // Remove "Related Links" and URLs
         }
 
         // Function to update the chat box
