@@ -87,8 +87,8 @@
                 return;
             }
 
-            // Append the new message to the chat history
-            chatHistory += `User: ${newMessage}\n`;
+            // Append the new message to the chat history with separators
+            chatHistory += `User: ${newMessage}\n---------------------\n`;
 
             // Update chat box with user message
             updateChatBox("user", newMessage);
@@ -106,7 +106,7 @@
             };
 
             // Send the request to the backend API
-            fetch('https://api.knowledge.navvis.com/handler', {
+            fetch('https://api.knowledge.navvis.com/handler2', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -123,10 +123,10 @@
                 // Debug: Log the response received from the backend
                 console.log("Response data:", data);
 
-                // Append the assistant's response to the chat history
-                chatHistory += `Assistant: ${data.response}\n`;
+                // Append the assistant's response (including URLs) to the chat history
+                chatHistory += `Assistant: ${data.response}\n---------------------\n`;
 
-                // Update chat box with assistant message
+                // Update chat box with assistant message (including URLs)
                 updateChatBox("assistant", data.response);
             })
             .catch(error => {
@@ -138,10 +138,15 @@
             messageInput.value = "";
         }
 
-        // Function to clean the chat history by removing "Related Links"
+        // Function to clean the chat history by removing "Related Links" and URLs
         function cleanChatHistory(history) {
-            const regex = /Related Links:.*(\n|$)/g;
-            return history.replace(regex, '');  // Remove "Related Links" and URLs
+            const regexRelatedLinks = /Related Links:.*(\n|$)/g;
+            const regexURL = /https?:\/\/[^\s]+/g; // Matches any URL
+
+            let cleanedHistory = history.replace(regexRelatedLinks, '');  // Remove "Related Links"
+            cleanedHistory = cleanedHistory.replace(regexURL, '');  // Remove URLs
+
+            return cleanedHistory;
         }
 
         // Function to update the chat box
