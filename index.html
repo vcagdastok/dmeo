@@ -19,12 +19,11 @@
         #chat-container {
             width: 100%;
             max-width: 600px;
-            height: 500px;
+            height: 80%;
             border: 1px solid #ccc;
             background-color: white;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
         }
         #chat-box {
             padding: 10px;
@@ -59,7 +58,10 @@
             border: none;
             cursor: pointer;
         }
-        #send-button:hover {
+        #send-button:disabled {
+            background-color: #cccccc;
+        }
+        #send-button:hover:enabled {
             background-color: #45a049;
         }
     </style>
@@ -75,98 +77,68 @@
     </div>
 
     <script>
-        let chatHistory = "";
+        let chatHistory = [];
 
-        // Function to send message and update chat
         function sendMessage() {
             const messageInput = document.getElementById("message-input");
             const newMessage = messageInput.value.trim();
 
             if (newMessage === "") {
-                console.log("Message input is empty. Not sending request.");
+                console.log("Message input is empty.");
                 return;
             }
 
-            // Append the new message to the chat history with separators
-            chatHistory += `User: ${newMessage}\n---------------------\n`;
-
-            // Update chat box with user message
+            // Append user message to chat history and display it
+            chatHistory.push({ role: "user", content: newMessage });
             updateChatBox("user", newMessage);
 
-            // Prepare the cleaned chat history without "Related Links"
-            const cleanedChatHistory = cleanChatHistory(chatHistory);
-
-            // Debug: Log the cleaned chat history being sent
-            console.log("Sending chat history to backend:", cleanedChatHistory);
-
-            // Prepare the request payload
+            // Prepare the payload
             const payload = {
-                message: cleanedChatHistory,
+                message: JSON.stringify(chatHistory),
                 context: "NavVis MLX"
             };
 
-            // Send the request to the backend API
+            toggleSendButton(true);
+
             fetch('https://api.knowledge.navvis.com/handler2', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             })
             .then(response => {
-                // Debug: Log the response status
-                console.log("Response status:", response.status);
-                if (!response.ok) {
-                    throw new Error(`Error: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`Error: ${response.status}`);
                 return response.json();
             })
             .then(data => {
-                // Debug: Log the response received from the backend
-                console.log("Response data:", data);
-
-                // Append the assistant's response (including URLs) to the chat history
-                chatHistory += `Assistant: ${data.response}\n---------------------\n`;
-
-                // Update chat box with assistant message (including URLs)
-                updateChatBox("assistant", data.response);
+                const assistantMessage = data.response || "No response received.";
+                chatHistory.push({ role: "assistant", content: assistantMessage });
+                updateChatBox("assistant", assistantMessage);
             })
-            .catch(error => {
-                // Log any errors to the console
-                console.error('Error during request:', error);
+            .catch(error => console.error('Error:', error))
+            .finally(() => {
+                toggleSendButton(false);
+                messageInput.value = "";
             });
-
-            // Clear the input field
-            messageInput.value = "";
         }
 
-        // Function to clean the chat history by removing "Related Links" and URLs
-        function cleanChatHistory(history) {
-            const regexRelatedLinks = /Related Links:.*(\n|$)/g;
-            const regexURL = /https?:\/\/[^\s]+/g; // Matches any URL
-
-            let cleanedHistory = history.replace(regexRelatedLinks, '');  // Remove "Related Links"
-            cleanedHistory = cleanedHistory.replace(regexURL, '');  // Remove URLs
-
-            return cleanedHistory;
-        }
-
-        // Function to update the chat box
         function updateChatBox(role, message) {
             const chatBox = document.getElementById("chat-box");
             const messageElement = document.createElement("p");
             messageElement.classList.add(role);
             messageElement.textContent = message;
             chatBox.appendChild(messageElement);
-            chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        // Event listener for the send button
-        document.getElementById("send-button").addEventListener("click", sendMessage);
+        function toggleSendButton(isDisabled) {
+            const sendButton = document.getElementById("send-button");
+            sendButton.disabled = isDisabled;
+            sendButton.textContent = isDisabled ? "Sending..." : "Send";
+        }
 
-        // Allow pressing 'Enter' to send a message
+        document.getElementById("send-button").addEventListener("click", sendMessage);
         document.getElementById("message-input").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                sendMessage();
-            }
+            if (event.key === "Enter") sendMessage();
         });
     </script>
 
