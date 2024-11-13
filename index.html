@@ -95,6 +95,7 @@
             }));
         }
 
+
         function sendMessage() {
     const messageInput = document.getElementById("message-input");
     const newMessage = messageInput.value.trim();
@@ -112,11 +113,10 @@
     const cleanedHistory = cleanChatHistory(chatHistory);
 
     // Prepare the payload
-const payload = {
-    message: cleanChatHistory(chatHistory), // Full chat history as an array
-    context: "NavVis MLX" // Session context
-};
-
+    const payload = {
+        message: cleanChatHistory(chatHistory), // Full chat history as an array
+        context: "NavVis MLX" // Session context
+    };
 
     console.log("Payload being sent to backend:", payload); // Log the payload for debugging
 
@@ -147,6 +147,7 @@ const payload = {
         messageInput.value = "";
     });
 }
+
 
 
         function updateChatBox(role, message) {
