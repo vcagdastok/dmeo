@@ -112,11 +112,11 @@
     const cleanedHistory = cleanChatHistory(chatHistory);
 
     // Prepare the payload
-    const payload = {
-        message: cleanedHistory, // Send as an array
-        last_assistant_message: chatHistory.findLast(msg => msg.role === "assistant")?.content || "",
-        context: "NavVis MLX"
-    };
+const payload = {
+    message: cleanChatHistory(chatHistory), // Full chat history as an array
+    context: "NavVis MLX" // Session context
+};
+
 
     console.log("Payload being sent to backend:", payload); // Log the payload for debugging
 
