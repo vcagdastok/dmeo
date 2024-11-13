@@ -79,11 +79,27 @@
     <script>
         let chatHistory = [];
 
+        // Clean content after "Related Links:" from messages
+        function cleanMessageContent(content) {
+            if (content.includes("Related Links:")) {
+                return content.split("Related Links:")[0].trim();
+            }
+            return content;
+        }
+
+        // Clean chat history to remove unnecessary content
+        function cleanChatHistory(history) {
+            return history.map(entry => ({
+                role: entry.role,
+                content: cleanMessageContent(entry.content)
+            }));
+        }
+
         function sendMessage() {
             const messageInput = document.getElementById("message-input");
             const newMessage = messageInput.value.trim();
 
-            if (newMessage === "") {
+            if (!newMessage) {
                 console.log("Message input is empty.");
                 return;
             }
@@ -92,11 +108,17 @@
             chatHistory.push({ role: "user", content: newMessage });
             updateChatBox("user", newMessage);
 
+            // Clean chat history before sending
+            const cleanedHistory = cleanChatHistory(chatHistory);
+
             // Prepare the payload
             const payload = {
-                message: JSON.stringify(chatHistory),
-                context: "NavVis MLX"
+                message: JSON.stringify(cleanedHistory), // Full chat history
+                last_assistant_message: chatHistory.findLast(msg => msg.role === "assistant")?.content || null,
+                context: "NavVis MLX" // Session context
             };
+
+            console.log("Payload being sent to backend:", payload); // Log the payload for debugging
 
             toggleSendButton(true);
 
@@ -113,8 +135,12 @@
                 const assistantMessage = data.response || "No response received.";
                 chatHistory.push({ role: "assistant", content: assistantMessage });
                 updateChatBox("assistant", assistantMessage);
+                console.log("Response received from backend:", data); // Log response for debugging
             })
-            .catch(error => console.error('Error:', error))
+            .catch(error => {
+                console.error('Error during API request:', error);
+                updateChatBox("assistant", "An error occurred. Please try again.");
+            })
             .finally(() => {
                 toggleSendButton(false);
                 messageInput.value = "";
