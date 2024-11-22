@@ -94,69 +94,95 @@
             .pop(); // Get the last assistant response
     }
 
-    function sendMessage() {
-        const messageInput = document.getElementById("message-input");
-        const newMessage = messageInput.value.trim();
+function sendMessage() {
+    const messageInput = document.getElementById("message-input");
+    const newMessage = messageInput.value.trim();
 
-        if (!newMessage) {
-            console.log("Message input is empty.");
-            return;
-        }
+    if (!newMessage) {
+        console.log("Message input is empty.");
+        return;
+    }
 
-        // Append user message to chat history and display it
-        chatHistory.push({ role: "user", content: newMessage });
-        updateChatBox("user", newMessage);
+    // Append user message to chat history and display it
+    chatHistory.push({ role: "user", content: newMessage });
+    updateChatBox("user", newMessage);
 
-        // Get the last assistant message
-        const lastAssistantMessage = getLastAssistantMessage();
+    // Get the last assistant message
+    const lastAssistantMessage = getLastAssistantMessage();
 
-        // Prepare the minimal payload
-        const payload = {
-            message: [
-                { role: "user", content: newMessage }, // Current user query
-                lastAssistantMessage ? lastAssistantMessage : null, // Last assistant response
-            ].filter(Boolean), // Remove null entries
-            context: "NavVis MLX", // Session context
-        };
+    // Prepare the minimal payload
+    const payload = {
+        message: [
+            { role: "user", content: newMessage }, // Current user query
+            lastAssistantMessage ? lastAssistantMessage : null, // Last assistant response
+        ].filter(Boolean), // Remove null entries
+        context: "NavVis MLX", // Session context
+    };
 
-        console.log("Payload being sent to backend:", payload); // Log the payload for debugging
+    console.log("Payload being sent to backend:", payload); // Log the payload for debugging
 
-        toggleSendButton(true);
+    toggleSendButton(true);
 
-        fetch("https://api.knowledge.navvis.com/handler2", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
+    fetch("https://api.knowledge.navvis.com/handler2", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+    })
+        .then((response) => {
+            console.log("Backend response status:", response.status);
+            if (!response.ok) return response.json().then((err) => { throw new Error(JSON.stringify(err)); });
+            return response.json();
         })
-            .then((response) => {
-                console.log("Backend response status:", response.status);
-                if (!response.ok) return response.json().then((err) => { throw new Error(JSON.stringify(err)); });
-                return response.json();
-            })
-            .then((data) => {
-                console.log("Response received from backend:", data); // Log response for debugging
-                const assistantMessage = data.response || "No response received.";
-                chatHistory.push({ role: "assistant", content: assistantMessage });
-                updateChatBox("assistant", assistantMessage);
-            })
-            .catch((error) => {
-                console.error("Error during API request:", error.message);
-                updateChatBox("assistant", `An error occurred: ${error.message}`);
-            })
-            .finally(() => {
-                toggleSendButton(false);
-                messageInput.value = "";
-            });
+        .then((data) => {
+            console.log("Response received from backend:", data); // Log response for debugging
+            const assistantMessage = data.response || "No response received.";
+            const relatedLinks = data.related_links || [];
+            chatHistory.push({ role: "assistant", content: assistantMessage, links: relatedLinks });
+            updateChatBox("assistant", assistantMessage, relatedLinks);
+        })
+        .catch((error) => {
+            console.error("Error during API request:", error.message);
+            updateChatBox("assistant", `An error occurred: ${error.message}`);
+        })
+        .finally(() => {
+            toggleSendButton(false);
+            messageInput.value = "";
+        });
+}
+
+
+function updateChatBox(role, message, relatedLinks = []) {
+    const chatBox = document.getElementById("chat-box");
+
+    // Add the assistant message
+    const messageElement = document.createElement("p");
+    messageElement.classList.add(role);
+    messageElement.textContent = message;
+    chatBox.appendChild(messageElement);
+
+    // Add related links if any
+    if (relatedLinks.length > 0) {
+        const linksContainer = document.createElement("div");
+        linksContainer.style.marginTop = "5px";
+
+        relatedLinks.forEach(link => {
+            const linkElement = document.createElement("a");
+            linkElement.href = link.url;
+            linkElement.textContent = `${link.url} (Score: ${link.score.toFixed(2)})`;
+            linkElement.target = "_blank";
+            linkElement.style.display = "block";
+            linkElement.style.color = "#0066cc";
+            linkElement.style.textDecoration = "none";
+            linkElement.style.marginBottom = "5px";
+            linksContainer.appendChild(linkElement);
+        });
+
+        chatBox.appendChild(linksContainer);
     }
 
-    function updateChatBox(role, message) {
-        const chatBox = document.getElementById("chat-box");
-        const messageElement = document.createElement("p");
-        messageElement.classList.add(role);
-        messageElement.textContent = message;
-        chatBox.appendChild(messageElement);
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
+    chatBox.scrollTop = chatBox.scrollHeight; // Scroll to the bottom
+}
+
 
     function toggleSendButton(isDisabled) {
         const sendButton = document.getElementById("send-button");
