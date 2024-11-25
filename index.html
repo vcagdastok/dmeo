@@ -94,6 +94,8 @@
             .pop(); // Get the last assistant response
     }
 
+
+
 function sendMessage() {
     const messageInput = document.getElementById("message-input");
     const newMessage = messageInput.value.trim();
@@ -107,12 +109,12 @@ function sendMessage() {
     chatHistory.push({ role: "user", content: newMessage });
     updateChatBox("user", newMessage);
 
-    // Get the last three messages from the chat history
-    const lastThreeMessages = chatHistory.slice(-3);
+    // Get the last three user-assistant interactions (six messages total)
+    const lastThreeInteractions = chatHistory.slice(-6);
 
     // Prepare the payload
     const payload = {
-        message: lastThreeMessages, // Include the last three messages
+        message: lastThreeInteractions, // Include the last three interactions
         context: "NavVis MLX", // Session context
     };
 
@@ -147,7 +149,7 @@ function sendMessage() {
         });
 }
 
-
+    
 
 function updateChatBox(role, message, relatedLinks = []) {
     const chatBox = document.getElementById("chat-box");
