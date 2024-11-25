@@ -107,15 +107,12 @@ function sendMessage() {
     chatHistory.push({ role: "user", content: newMessage });
     updateChatBox("user", newMessage);
 
-    // Get the last assistant message
-    const lastAssistantMessage = getLastAssistantMessage();
+    // Get the last three messages from the chat history
+    const lastThreeMessages = chatHistory.slice(-3);
 
-    // Prepare the minimal payload
+    // Prepare the payload
     const payload = {
-        message: [
-            { role: "user", content: newMessage }, // Current user query
-            lastAssistantMessage ? lastAssistantMessage : null, // Last assistant response
-        ].filter(Boolean), // Remove null entries
+        message: lastThreeMessages, // Include the last three messages
         context: "NavVis MLX", // Session context
     };
 
@@ -149,6 +146,7 @@ function sendMessage() {
             messageInput.value = "";
         });
 }
+
 
 
 function updateChatBox(role, message, relatedLinks = []) {
